@@ -4,7 +4,6 @@
 """Train a video classification model."""
 
 import numpy as np
-import pprint
 import torch
 from fvcore.nn.precise_bn import get_bn_modules, update_bn_stats
 
@@ -26,21 +25,6 @@ from slowfast.utils.multigrid import MultigridSchedule
 logger = logging.get_logger(__name__)
 
 
-def copyParams(module_src, module_dest):
-    params_src = module_src.named_parameters()
-    params_dest = module_dest.named_parameters()
-
-    dict_dest = dict(params_dest)
-
-    for name, param in params_src:
-        dict_dest[name].data.copy_(param.data)
-
-
-
-
-
-
-
 def train_epoch(
     train_loader,
     model,
@@ -52,7 +36,6 @@ def train_epoch(
     total_epochs,
     cfg,
     writer=None,
-    bottom_model=None
 ):
     """
     Perform the video training for one epoch.
@@ -126,19 +109,7 @@ def train_epoch(
                 preds = model(inputs)
 
             # Compute the loss.
-            if 'distill' in cfg.MODEL.LOSS_FUNC:
-                loss = loss_fun(inputs, preds, labels)
-            elif 'margin' in cfg.MODEL.LOSS_FUNC:
-                if bottom_model is not None:
-                    copyParams(model, bottom_model)
-                    with torch.no_grad():
-                        bottom_preds = bottom_model(inputs)
-                else:
-                    bottom_preds = None
-                        
-                loss = loss_fun(preds, labels, bottom_preds)
-            else:
-                loss = loss_fun(preds, labels)
+            loss = loss_fun(preds, labels)
 
 
         # check Nan Loss.
@@ -475,48 +446,15 @@ def train(cfg):
         cfg = multigrid.init_multigrid(cfg)
         if cfg.MULTIGRID.LONG_CYCLE:
             cfg, _ = multigrid.update_long_cycle(cfg, cur_epoch=0)
-    # Print config.
-    #logger.info("Train with config:")
-    #logger.info(pprint.pformat(cfg))
-
+    
     # Build the video model and print model statistics.
     model = build_model(cfg)
     if du.is_master_proc() and cfg.LOG_MODEL_INFO:
         misc.log_model_info(model, cfg, use_train_input=True)
     
-    from fvcore.nn import FlopCountAnalysis, parameter_count_table
-    tensor = (torch.rand(1, 1, 3, 16, 224, 224).cuda(),)
-
-    flops = FlopCountAnalysis(model, tensor)
-    print("FLOPs: ", flops.total())
-    print("Parames: ", parameter_count_table(model))
-    print("Loss function: ", cfg.MODEL.LOSS_FUNC)
-
-    bottom_model = None
-    # Explicitly declare reduction to mean.
-    if 'distill' in cfg.MODEL.LOSS_FUNC:
-        new_cfg = cfg
-        new_cfg.MVIT.TIME_PRUNING_LOC = None
-        new_cfg.MVIT.SPACE_PRUNING_LOC = None
-        model_t = build_model(new_cfg)
-        cu.load_checkpoint(cfg.TRAIN.TEACHER_CHECKPOINT_FILE_PATH, model_t)
-        print('sucessfully loaded the pre-trained weights for the teacher model from: ', cfg.TRAIN.TEACHER_CHECKPOINT_FILE_PATH)
-        model_t.eval()
-        loss_fun = losses.get_loss_func(cfg.MODEL.LOSS_FUNC)(teacher_model=model_t, distill_type=cfg.MODEL.DISTILL_TYPE)
-    elif 'margin' in cfg.MODEL.LOSS_FUNC:
-        new_cfg = cfg
-        new_cfg.MVIT.IF_TOPK = False
-        bottom_model = build_model(new_cfg)
-        copyParams(model, bottom_model)
-        bottom_model.eval()
-        print('sucessfully initialize the bottom-k model')
-        loss_fun = losses.get_loss_func(cfg.MODEL.LOSS_FUNC)(margin=cfg.MODEL.MARGIN, alpha1=cfg.MODEL.MARGIN_ALPHA1, alpha2=cfg.MODEL.MARGIN_ALPHA2)
-    elif 'pruning' in cfg.MODEL.LOSS_FUNC:
-        loss_fun = losses.get_loss_func(cfg.MODEL.LOSS_FUNC)(pruning_loc=cfg.MVIT.TIME_PRUNING_LOC, keep_ratio=cfg.MVIT.TIME_LEFT_RATIO)
-    else:
-        loss_fun = losses.get_loss_func(cfg.MODEL.LOSS_FUNC)(
-                reduction="mean"
-        )
+    loss_fun = losses.get_loss_func(cfg.MODEL.LOSS_FUNC)(
+        reduction="mean"
+    )
 
 
     # Construct the optimizer.
@@ -525,15 +463,13 @@ def train(cfg):
     scaler = torch.cuda.amp.GradScaler(enabled=cfg.TRAIN.MIXED_PRECISION)
 
     # Load a checkpoint to resume training if applicable.
-    """start_epoch = cu.load_train_checkpoint(
-        cfg, model, optimizer, scaler if cfg.TRAIN.MIXED_PRECISION else None
-    )"""
     if not cfg.TRAIN.FINETUNE:
         start_epoch = cu.load_train_checkpoint(cfg, model, optimizer, scaler if cfg.TRAIN.MIXED_PRECISION else None)
     else:
         if cfg.TRAIN.AUTO_RESUME and cu.has_checkpoint(cfg.OUTPUT_DIR):
             last_checkpoint = cu.get_last_checkpoint(cfg.OUTPUT_DIR)
-            checkpoint_epoch = cu.load_checkpoint(last_checkpoint, model, cfg.NUM_GPUS > 1, optimizer, scaler if cfg.TRAIN.MIXED_PRECISION else None)
+            checkpoint_epoch = cu.load_checkpoint(last_checkpoint, model, cfg.NUM_GPUS > 1, 
+                optimizer, scaler if cfg.TRAIN.MIXED_PRECISION else None)
             start_epoch = checkpoint_epoch + 1
         else:
             start_epoch = 0
@@ -610,7 +546,6 @@ def train(cfg):
             total_epochs,
             cfg,
             writer,
-            bottom_model,
         )
         epoch_timer.epoch_toc()
         logger.info(

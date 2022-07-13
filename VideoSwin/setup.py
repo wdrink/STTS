@@ -99,7 +99,7 @@ if __name__ == '__main__':
         name='mmaction2',
         version=get_version(),
         description='OpenMMLab Video Understanding Toolbox and Benchmark',
-        long_description=readme(),
+        # long_description=readme(),
         long_description_content_type='text/markdown',
         maintainer='MMAction2 Authors',
         maintainer_email='openmmlab@gmail.com',

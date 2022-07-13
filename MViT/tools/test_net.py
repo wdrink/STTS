@@ -16,7 +16,6 @@ import slowfast.utils.misc as misc
 import slowfast.visualization.tensorboard_vis as tb
 from slowfast.datasets import loader
 from slowfast.models import build_model
-# from slowfast.models.utils import visualize_temporal, visualize_spatial, visualize_joint
 from slowfast.utils.env import pathmgr
 from slowfast.utils.meters import AVAMeter, TestMeter
 
@@ -157,23 +156,13 @@ def test(cfg):
     # Setup logging format.
     logging.setup_logging(cfg.OUTPUT_DIR)
 
-    # Print config.
-    #logger.info("Test with config:")
-    #logger.info(cfg)
-
     # Build the video model and print model statistics.
     model = build_model(cfg)
     if du.is_master_proc() and cfg.LOG_MODEL_INFO:
         misc.log_model_info(model, cfg, use_train_input=False)
 
     cu.load_test_checkpoint(cfg, model)
-
-    """from fvcore.nn import FlopCountAnalysis, parameter_count_table
-    tensor = (torch.rand(1, 1, 3, 16, 224, 224).cuda(),)
-    flops = FlopCountAnalysis(model, tensor)
-    print("FLOPs: ", flops.total())
-    print("Parames: ", parameter_count_table(model))"""
-
+    
     # Create video testing loaders.
     test_loader = loader.construct_loader(cfg, "test")
     logger.info("Testing model for {} iterations".format(len(test_loader)))
