@@ -56,7 +56,7 @@ cd MViT
 python tools/run_net.py --cfg path_to_your_config
 ```
 
-For example, to train MViT-T<sup>0</sup><sub>0.6</sub>-S<sup>4</sup><sub>0.9</sub>, run:
+For example, to evaluate MViT-T<sup>0</sup><sub>0.6</sub>-S<sup>4</sup><sub>0.9</sub>, run:
 
 ```
 python tools/run_net.py --cfg configs/Kinetics/t0_0.6_s4_0.9.yaml
