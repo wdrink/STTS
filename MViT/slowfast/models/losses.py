@@ -78,102 +78,13 @@ class SoftTargetCrossEntropyPruning(nn.Module):
         return loss
         
 
-class DistillationLoss(torch.nn.Module):
-    """
-    This module wraps a standard criterion and adds an extra knowledge distillation loss by
-    taking a teacher model prediction and using it as additional supervision.
-    """
-    def __init__(self, teacher_model, distill_type='hard', alpha=0.5, tau=1.0):
-        super().__init__()
-        self.teacher_model = teacher_model
-        assert distill_type in ['none', 'soft', 'hard']
-        self.distillation_type = distill_type
-        self.alpha = alpha
-        self.tau = tau
-
-    def forward(self, inputs, outputs, labels):
-        """
-        Args:
-            inputs: The original inputs that are feed to the teacher model
-            outputs: the outputs of the model to be trained. It is expected to be
-                either a Tensor, or a Tuple[Tensor, Tensor], with the original output
-                in the first position and the distillation predictions as the second output
-            labels: the labels for the base criterion
-        """
-        
-        base_loss = torch.sum(-labels * F.log_softmax(outputs, dim=-1), dim=-1).mean()
-       
-        
-        if self.distillation_type == 'none':
-            return base_loss
-
-        # don't backprop throught the teacher
-        with torch.no_grad():
-            teacher_outputs = self.teacher_model(inputs)
-
-        if self.distillation_type == 'soft':
-            T = self.tau
-            distillation_loss = F.kl_div(
-                F.log_softmax(outputs / T, dim=1),
-                F.log_softmax(teacher_outputs / T, dim=1),
-                reduction='sum',
-                log_target=True
-            ) * (T * T) / outputs.numel()
-           
-        elif self.distillation_type == 'hard':
-            distillation_loss = torch.sum(-teacher_outputs * F.log_softmax(outputs, dim=-1), dim=-1).mean()
-
-        loss = base_loss * (1 - self.alpha) + distillation_loss * self.alpha
-        return loss
-
-
-class MarginLoss(torch.nn.Module):
-    """
-    This module wraps a standard criterion and adds an extra knowledge distillation loss by
-    taking a teacher model prediction and using it as additional supervision.
-    """
-    def __init__(self, margin=0.5, alpha1=2, alpha2=0.5):
-        super().__init__()
-        self.alpha1 = alpha1
-        self.alpha2 = alpha2
-        self.margin = margin
-
-    def forward(self, outputs, labels, bottom_outputs):
-        """
-        Args:
-            inputs: The original inputs that are feed to the teacher model
-            outputs: the outputs of the model to be trained. It is expected to be
-                either a Tensor, or a Tuple[Tensor, Tensor], with the original output
-                in the first position and the distillation predictions as the second output
-            labels: the labels for the base criterion
-        """
-        
-        base_loss = torch.sum(-labels * F.log_softmax(outputs, dim=-1), dim=-1).mean()
-
-        if bottom_outputs is None:
-            loss = base_loss
-        
-        else:
-            gt_labels = labels.argmax(dim=1).unsqueeze(1)
-            outputs = F.softmax(outputs, dim=-1)
-            bottom_outputs = F.softmax(bottom_outputs, dim=-1)
-            topk_prob = batched_index_select(outputs, dim=1, index=gt_labels)
-            bottom_prob = batched_index_select(bottom_outputs, dim=1, index=gt_labels)
-            margin_loss = bottom_prob - topk_prob + self.margin
-            margin_loss = F.relu(margin_loss).mean()
-            loss = base_loss * self.alpha1 + margin_loss * self.alpha2
-            
-        return loss
-
-
 _LOSSES = {
     "cross_entropy": nn.CrossEntropyLoss,
     "bce": nn.BCELoss,
     "bce_logit": nn.BCEWithLogitsLoss,
     "soft_cross_entropy": SoftTargetCrossEntropy,
     "soft_cross_entropy_pruning": SoftTargetCrossEntropyPruning,
-    "distill": DistillationLoss,
-    "margin": MarginLoss
+    
 }
 
 

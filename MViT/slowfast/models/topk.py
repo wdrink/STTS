@@ -132,7 +132,7 @@ def min_max_norm(x):
 
 
 class PatchNet(nn.Module):
-    def __init__(self, score, k, in_channels, stride=None, num_samples=500, if_topk=True):
+    def __init__(self, score, k, in_channels, stride=None, num_samples=500):
         super(PatchNet, self).__init__()
         self.k = k
         self.anchor_size = int(sqrt(k))
@@ -140,7 +140,6 @@ class PatchNet(nn.Module):
         self.score = score
         self.in_channels = in_channels
         self.num_samples = num_samples
-        self.if_topk = if_topk
 
         if score == 'tpool':
             self.score_network = PredictorLG(embed_dim=2*in_channels)
@@ -188,8 +187,7 @@ class PatchNet(nn.Module):
                 x_ = torch.cat((avg, max_), dim=2)
                 scores = self.score_network(x_).squeeze(-1)
                 scores = min_max_norm(scores)
-                if not self.if_topk:
-                    scores = -scores
+                
                 if self.training:
                     indicator = self.get_indicator(scores, self.k, sigma)
                 else:
@@ -206,8 +204,6 @@ class PatchNet(nn.Module):
                 scores = F.unfold(scores, kernel_size=self.anchor_size, stride=s)
                 scores = scores.mean(dim=1)
                 scores = min_max_norm(scores)
-                if not self.if_topk:
-                    scores = -scores
                 
                 x = rearrange(x, '(b t) (h w) c -> (b t) c h w', b=B, h=H)
                 x = F.unfold(x, kernel_size=self.anchor_size, stride=s).permute(0, 2, 1).contiguous()
@@ -232,7 +228,8 @@ class PatchNet(nn.Module):
                 patches = rearrange(patches, 'b k (n c) -> b (k n) c', n = N)
 
             elif self.score == 'spatch':
-                patches = rearrange(patches, '(b t) k (c kh kw) -> b (t k kh kw) c', b=B, c=self.in_channels, kh=self.anchor_size) 
+                patches = rearrange(patches, '(b t) k (c kh kw) -> b (t k kh kw) c',
+                    b=B, c=self.in_channels, kh=self.anchor_size) 
 
             return patches
         
@@ -244,7 +241,8 @@ class PatchNet(nn.Module):
                 patches = rearrange(patches, 'b k (n c) -> b (k n) c', n = N)
 
             elif self.score == 'spatch':
-                patches = rearrange(patches, '(b t) k (c kh kw) -> b (t k kh kw) c', b=B, c=self.in_channels, kh=self.anchor_size)
+                patches = rearrange(patches, '(b t) k (c kh kw) -> b (t k kh kw) c', 
+                    b=B, c=self.in_channels, kh=self.anchor_size)
             
             return patches
             

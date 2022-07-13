@@ -299,14 +299,6 @@ _C.MODEL.HEAD_ACT = "softmax"
 # Activation checkpointing enabled or not to save GPU memory.
 _C.MODEL.ACT_CHECKPOINT = False
 
-_C.TRAIN.TEACHER_CHECKPOINT_FILE_PATH = ""
-
-_C.MODEL.DISTILL_TYPE = "hard"
-
-_C.MODEL.MARGIN = 0.
-_C.MODEL.MARGIN_ALPHA1 = 1.
-_C.MODEL.MARGIN_ALPHA2 = 0.5
-
 # -----------------------------------------------------------------------------
 # MViT options
 # -----------------------------------------------------------------------------
@@ -398,9 +390,6 @@ _C.MVIT.SEP_POS_EMBED = False
 
 # Dropout rate for the MViT backbone.
 _C.MVIT.DROPOUT_RATE = 0.0
-
-_C.MVIT.IF_TOPK = True
-
 
 # -----------------------------------------------------------------------------
 # SlowFast options

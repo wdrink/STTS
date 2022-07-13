@@ -14,7 +14,7 @@ import slowfast.utils.weight_init_helper as init_helper
 from slowfast.models.attention import MultiScaleBlock
 from slowfast.models.batchnorm_helper import get_norm
 from slowfast.models.stem_helper import PatchEmbed
-from slowfast.models.utils import round_width, validate_checkpoint_wrapper_import, visualize_spatial, visualize_temporal
+from slowfast.models.utils import round_width, validate_checkpoint_wrapper_import
 from slowfast.models.topk import PatchNet
 from . import head_helper
 from .build import MODEL_REGISTRY
@@ -125,8 +125,6 @@ class MViT(nn.Module):
         self.sigma_max = cfg.MVIT.SIGMA
         self.sigma = cfg.MVIT.SIGMA
 
-        if_topk = cfg.MVIT.IF_TOPK
-
         dim_mul, head_mul = torch.ones(depth + 1), torch.ones(depth + 1)
         for i in range(len(cfg.MVIT.DIM_MUL)):
             dim_mul[cfg.MVIT.DIM_MUL[i][0]] = cfg.MVIT.DIM_MUL[i][1]
@@ -224,14 +222,14 @@ class MViT(nn.Module):
             if self.time_pruning_loc is not None and i in self.time_pruning_loc:
                 left_frames = int(embedding_temporal_size * time_left_ratio[t_count])
                 t_count += 1
-                patchnet = PatchNet(score=time_score, k=left_frames, in_channels = embed_dim, if_topk=if_topk)
+                patchnet = PatchNet(score=time_score, k=left_frames, in_channels = embed_dim)
                 time_score_predictor.append(patchnet)
                 embedding_temporal_size = left_frames
             
             if self.space_pruning_loc is not None and i in self.space_pruning_loc:
                 left_patches = int(embedding_spatial_size * space_left_ratio[s_count])
                 s_count += 1
-                patchnet = PatchNet(score=space_score, k=left_patches, in_channels = embed_dim, if_topk=if_topk) 
+                patchnet = PatchNet(score=space_score, k=left_patches, in_channels = embed_dim) 
                 space_score_predictor.append(patchnet)
                 embedding_spatial_size = left_patches
         
