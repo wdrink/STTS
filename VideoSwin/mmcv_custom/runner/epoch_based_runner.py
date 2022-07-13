@@ -24,9 +24,7 @@ class EpochBasedRunnerAmp(mmcv.runner.EpochBasedRunner):
                  meta=None,
                  max_iters=None,
                  max_epochs=None,
-                 amp=False,
-                 teacher_model=None,
-                 bottom_model=None):
+                 amp=False):
         super().__init__(
                  model,
                  batch_processor,
@@ -37,15 +35,13 @@ class EpochBasedRunnerAmp(mmcv.runner.EpochBasedRunner):
                  max_iters,
                  max_epochs)
         self.amp = amp
-        self.teacher_model = teacher_model
-        self.bottom_model = bottom_model
     
     def run_iter(self, data_batch, train_mode, **kwargs):
         if self.batch_processor is not None:
             outputs = self.batch_processor(
                 self.model, data_batch, train_mode=train_mode, **kwargs)
         elif train_mode:
-            outputs = self.model.train_step(data_batch, self.optimizer, self.teacher_model, self.bottom_model,
+            outputs = self.model.train_step(data_batch, self.optimizer,
                                             **kwargs)
         else:
             outputs = self.model.val_step(data_batch, self.optimizer, **kwargs)

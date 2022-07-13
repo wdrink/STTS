@@ -24,9 +24,7 @@ def train_model(model,
                 validate=False,
                 test=dict(test_best=False, test_last=False),
                 timestamp=None,
-                meta=None,
-                teacher_model=None,
-                bottom_model=None):
+                meta=None):
     """Train model entry function.
 
     Args:
@@ -115,11 +113,6 @@ def train_model(model,
         model = MMDataParallel(
             model.cuda(cfg.gpu_ids[0]), device_ids=cfg.gpu_ids)
     
-    if teacher_model is not None:
-        teacher_model.cuda()
-    
-    if bottom_model is not None:
-        bottom_model.cuda()
 
     if use_amp:
         Runner = EpochBasedRunnerAmp
@@ -129,9 +122,7 @@ def train_model(model,
             work_dir=cfg.work_dir,
             logger=logger,
             meta=meta,
-            amp=use_amp,
-            teacher_model=teacher_model,
-            bottom_model=bottom_model)
+            amp=use_amp)
     else:
         Runner = OmniSourceRunner if cfg.omnisource else EpochBasedRunner
         runner = Runner(
@@ -139,9 +130,7 @@ def train_model(model,
             optimizer=optimizer,
             work_dir=cfg.work_dir,
             logger=logger,
-            meta=meta,
-            teacher_model=teacher_model,
-            bottom_model=bottom_model)
+            meta=meta)
     # an ugly workaround to make .log and .log.json filenames the same
     runner.timestamp = timestamp
 

@@ -21,7 +21,6 @@ from mmaction.utils import collect_env, get_root_logger, register_module_hooks
 def get_args_parser():
     parser = argparse.ArgumentParser(description='Train a recognizer', add_help=False)
     parser.add_argument('--config', help='train config file path')
-    parser.add_argument('--teacher_checkpoint', help='train checkpoint file path')
     parser.add_argument('--checkpoint', help='train checkpoint file path')
     parser.add_argument('--work_dir', help='the dir to save logs and models')
     parser.add_argument(
@@ -167,25 +166,6 @@ def main(args):
         train_cfg=cfg.get('train_cfg'),
         test_cfg=cfg.get('test_cfg'))
     
-    teacher_model = bottom_model = None
-    if 'DistillationLoss' in cfg.model.cls_head.loss_cls.type:
-        teacher_model = build_model(cfg.model,
-        train_cfg=cfg.get('train_cfg'),
-        test_cfg=cfg.get('test_cfg'))
-        load_checkpoint(teacher_model, args.teacher_checkpoint, map_location='cpu')
-        teacher_model.eval()
-        print('sucessfully loaded from pre-trained weights for the teacher model')
-
-
-    elif 'MarginLoss' in cfg.model.cls_head.loss_cls.type:
-        new_cfg = cfg
-        new_cfg.model.backbone.if_topk = False
-        bottom_model = build_model(
-            new_cfg.model,
-            train_cfg = new_cfg.get('train_cfg'),
-            test_cfg = new_cfg.get('test_cfg'))
-        bottom_model.eval()
-        print('sucessfully initialize the bottom-k model')
 
     if len(cfg.module_hooks) > 0:
         register_module_hooks(model, cfg.module_hooks)
@@ -227,9 +207,7 @@ def main(args):
         validate=args.validate,
         test=test_option,
         timestamp=timestamp,
-        meta=meta,
-        teacher_model=teacher_model,
-        bottom_model=bottom_model)
+        meta=meta)
 
 
 if __name__ == '__main__':

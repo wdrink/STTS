@@ -73,13 +73,7 @@ class BaseRecognizer(nn.Module, metaclass=ABCMeta):
             self.backbone_from = 'timm'
         else:
             self.backbone = builder.build_backbone(backbone)
-            ''' if 'DistillationLoss' in cls_head['loss_cls']['type']:
-                self.teacher_backbone = builder.build_backbone(backbone)
-
-            elif 'MarginLoss' in cls_head['loss_cls']['type']:
-                new_backbone = backbone
-                new_backbone['if_topk'] = False
-                self.bottom_backbone = builder.build_backbone(new_backbone)'''
+            
 
         if neck is not None:
             self.neck = builder.build_neck(neck)
@@ -250,7 +244,7 @@ class BaseRecognizer(nn.Module, metaclass=ABCMeta):
 
         return loss, log_vars
 
-    def forward(self, imgs, label=None, teacher_model=None, bottom_model=None, return_loss=True, **kwargs):
+    def forward(self, imgs, label=None, return_loss=True, **kwargs):
         """Define the computation performed at every call."""
         if kwargs.get('gradcam', False):
             del kwargs['gradcam']
@@ -260,11 +254,11 @@ class BaseRecognizer(nn.Module, metaclass=ABCMeta):
                 raise ValueError('Label should not be None.')
             if self.blending is not None:
                 imgs, label = self.blending(imgs, label)
-            return self.forward_train(imgs, label, teacher_model, bottom_model, **kwargs)
+            return self.forward_train(imgs, label, **kwargs)
 
         return self.forward_test(imgs, **kwargs)
 
-    def train_step(self, data_batch, optimizer, teacher_model, bottom_model, **kwargs):
+    def train_step(self, data_batch, optimizer, **kwargs):
         """The iteration step during training.
 
         This method defines an iteration step during training, except for the
@@ -298,7 +292,7 @@ class BaseRecognizer(nn.Module, metaclass=ABCMeta):
             assert item in data_batch
             aux_info[item] = data_batch[item]
 
-        losses = self(imgs, label, teacher_model, bottom_model, return_loss=True, **aux_info)
+        losses = self(imgs, label, return_loss=True, **aux_info)
 
         loss, log_vars = self._parse_losses(losses)
 

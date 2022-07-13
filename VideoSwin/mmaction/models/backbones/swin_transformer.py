@@ -500,8 +500,7 @@ class SwinTransformer3D(nn.Module):
                  space_pruning_loc=None,
                  space_left_ratio=[0.5],
                  space_score='spool',
-                 sigma=0.05,
-                 if_topk=True):
+                 sigma=0.05):
         super().__init__()
 
         self.pretrained = pretrained
@@ -571,14 +570,14 @@ class SwinTransformer3D(nn.Module):
             if self.time_pruning_loc is not None and i_layer in self.time_pruning_loc:
                 left_frames = int(embedding_temporal_size * time_left_ratio[t_count])
                 t_count += 1
-                patchnet = PatchNet(score=time_score, k=left_frames, in_channels = int(embed_dim * 2**i_layer), if_topk=if_topk)
+                patchnet = PatchNet(score=time_score, k=left_frames, in_channels = int(embed_dim * 2**i_layer))
                 time_score_predictor.append(patchnet)
                 embedding_temporal_size = left_frames
             
             if self.space_pruning_loc is not None and i_layer in self.space_pruning_loc:
                 left_patches = int(embedding_spatial_size * space_left_ratio[s_count])
                 s_count += 1
-                patchnet = PatchNet(score=space_score, k=left_patches, in_channels = int(embed_dim * 2**i_layer), if_topk=if_topk) 
+                patchnet = PatchNet(score=space_score, k=left_patches, in_channels = int(embed_dim * 2**i_layer)) 
                 space_score_predictor.append(patchnet)
                 embedding_spatial_size = left_patches
             

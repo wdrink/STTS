@@ -42,7 +42,7 @@ We present STTS, a token selection framework that dynamically selects a few info
 
 
 ## Installation
-Please check [MViT](https://github.com/facebookresearch/SlowFast) and [VideoSwin](https://github.com/SwinTransformer/Video-Swin-Transformer) for installation instructions. 
+Please check [MViT](https://github.com/facebookresearch/SlowFast) and [VideoSwin](https://github.com/SwinTransformer/Video-Swin-Transformer) for installation instructions and data preparation. 
 
 ## Training and Evaluation
 

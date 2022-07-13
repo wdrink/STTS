@@ -19,7 +19,7 @@ def copyParams(module_src, module_dest):
 class Recognizer3D(BaseRecognizer):
     """3D recognizer model framework."""
 
-    def forward_train(self, imgs, labels, teacher_model, bottom_model, **kwargs):
+    def forward_train(self, imgs, labels, **kwargs):
         """Defines the computation performed at every call when training."""
 
         assert self.with_cls_head
@@ -34,19 +34,8 @@ class Recognizer3D(BaseRecognizer):
         cls_score = self.cls_head(x)
         gt_labels = labels.squeeze()
 
-        if 'DistillationLoss' in self.cls_head.loss_type:
-            teacher_feature = teacher_model.extract_feat(imgs)
-            teacher_outputs = teacher_model.cls_head(teacher_feature)
-            loss_cls = self.cls_head.loss(cls_score=cls_score, labels=gt_labels, teacher_outputs=teacher_outputs)
-
-        elif 'MarginLoss' in self.cls_head.loss_type:
-            copyParams(self, bottom_model)
-            bottom_feature = bottom_model.extract_feat(imgs)
-            bottom_output = bottom_model.cls_head(bottom_feature)
-            loss_cls = self.cls_head.loss(cls_score=cls_score, labels=gt_labels, bottom_outputs=bottom_output)
-
-        else:
-            loss_cls = self.cls_head.loss(cls_score, gt_labels, **kwargs)
+       
+        loss_cls = self.cls_head.loss(cls_score, gt_labels, **kwargs)
         
         losses.update(loss_cls)
 
