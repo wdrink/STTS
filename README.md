@@ -80,7 +80,7 @@ bash tools/dist_test.sh path_to_your_config path_to_your_checkpoint $NUM_GPUS --
 
 ```
 
-For example, to train VideoSwin-T<sup>0</sup><sub>0.9</sub> on a single node with 8 gpus, run:
+For example, to evaluate VideoSwin-T<sup>0</sup><sub>0.9</sub> on a single node with 8 gpus, run:
 
 ```
 cd VideoSwin
