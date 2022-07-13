@@ -1,0 +1,19 @@
+# Byte-compiled / optimized / DLL files
+MViT/__pycache__/
+MViT/.DS_Store
+
+
+# Distribution / packaging
+MViT/build/
+MViT/*.egg-info/
+MViT/__pycache__
+MViT/*/__pycache__
+MViT/*/*/__pycache__
+
+
+VideoSwin/apex
+VideoSwin/build
+VideoSwin/*egg-info
+VideoSwin/__pycache__
+VideoSwin/*/__pycache__
+VideoSwin/*/*/__pycache__
